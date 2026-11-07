@@ -45,6 +45,7 @@ function workspaceView(){
   const count = model.draft?.entries?.length || 0;
   return `${header('每一次阅读，都更接近答案。','带着你的研究问题，让 AI 阅读、定位证据、整理成果。','<span class="tag-note">✦ Your research, beautifully organized</span>')}
   <section class="hero"><div class="hero-copy"><div class="hero-eyebrow">AI RESEARCH WORKSPACE</div><h2>不只是总结论文，<br>而是找到你真正需要的答案。</h2><p>定义阅读任务 → 识别相关性 → 定向信息提取 → 原文核查 → 保存研究卡片。一套为学术阅读设计的可控工作流。</p></div><div class="hero-art"><div class="floating-page back"></div><div class="floating-page"><div class="mini-symbol">✦</div><div class="page-line wide"></div><div class="page-line mid"></div><div class="page-line wide"></div><div class="page-line short"></div></div></div></section>
+  ${model.data?.ephemeral?`<div class="mode-alert"><strong>在线演示版：</strong>云端仅使用临时存储，服务实例变化后论文和阅读卡片可能丢失。请及时导出结果；不要上传敏感或未获授权的文件。</div>`:''}
   ${hasDemo()?`<div class="mode-alert"><strong>当前是透明演示模式。</strong> PDF 上传、页码解析、片段检索、保存与导出可实际使用；不接入 GPT-4.1 时不会生成真实 AI 结论。你可先用演示论文走通流程，部署后通过服务端环境变量启用 AI。</div>`:''}
   <div class="two-columns">
     <div>
