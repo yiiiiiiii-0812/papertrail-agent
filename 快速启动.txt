@@ -1,0 +1,12 @@
+PaperTrail | 文献阅读 Agent · MVP
+
+1. 解压全部文件到一个英文路径，例如 D:\PaperTrail\。
+2. Windows 电脑安装 Python 3.11+。
+3. 双击 start_windows.bat；初次运行需要联网安装依赖。
+4. 浏览器打开 http://127.0.0.1:8000 。
+5. 点击「体验示例」，按提示执行：相关性判断 → 进入精读 → 原文核查 → 确认保存。
+6. 真实模型：复制 .env.example 为 .env，填写 OPENAI_API_KEY 后重启服务。
+
+注意：未配置 API Key 时是规则演示模式，不能视为 GPT-4.1 结果。
+目前交付的是可运行网页项目，不是已经发布的公网 URL。
+如需用于简历链接，请按 README.md 中的部署说明发布到 Render 等平台。
