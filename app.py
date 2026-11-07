@@ -23,10 +23,14 @@ from engine import parse_pdf, judge_relevance, extract_card, ai_available, MODEL
 from skills import SKILLS
 
 BASE = Path(__file__).resolve().parent
-DATA_DIR = Path(os.getenv("DATA_DIR", str(BASE / "data"))).resolve()
+IS_VERCEL = bool(os.getenv("VERCEL"))
+# On Vercel, only /tmp is writable. Data stored there is temporary and can
+# disappear when serverless functions restart or route to another instance.
+DATA_DIR = Path(os.getenv("DATA_DIR", "/tmp/papertrail-data" if IS_VERCEL else str(BASE / "data"))).resolve()
 UPLOAD_DIR = DATA_DIR / "uploads"
 DB_FILE = DATA_DIR / "papertrail.sqlite3"
-UPLOAD_LIMIT = 20 * 1024 * 1024
+# Vercel Functions have a 4.5 MB request body limit; allow multipart headroom.
+UPLOAD_LIMIT = (4 if IS_VERCEL else 20) * 1024 * 1024
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -96,7 +100,7 @@ async def assign_anonymous_session(request: Request, call_next):
     response = await call_next(request)
     if fresh:
         response.set_cookie("pt_session", token, httponly=True, samesite="lax",
-                            secure=os.getenv("COOKIE_SECURE", "false").lower() == "true",
+                            secure=os.getenv("COOKIE_SECURE", "true" if IS_VERCEL else "false").lower() == "true",
                             max_age=60*60*24*30, path="/")
     response.headers["Cache-Control"] = "no-store" if request.url.path.startswith("/api/") else "public, max-age=60"
     response.headers["X-Content-Type-Options"] = "nosniff"
@@ -158,7 +162,7 @@ def index():
 
 @app.get("/api/health")
 def health():
-    return {"ok":True, "version":"0.1.0", "mode":"ai" if ai_available() else "demo", "model":MODEL}
+    return {"ok":True, "version":"0.1.0", "mode":"ai" if ai_available() else "demo", "model":MODEL, "ephemeral":IS_VERCEL}
 
 
 @app.get("/api/state")
@@ -171,14 +175,14 @@ def state(req: Request):
         d["warnings"] = json.loads(d.pop("warnings_json"))
     for card in cards:
         card["content"] = json.loads(card.pop("content_json"))
-    return {"mode":"ai" if ai_available() else "demo", "model":MODEL,
+    return {"mode":"ai" if ai_available() else "demo", "model":MODEL, "ephemeral":IS_VERCEL,
             "documents":docs, "tasks":tasks, "cards":cards,
             "skills":[{"id":s.id,"name":s.name,"description":s.description} for s in SKILLS.values()]}
 
 
 async def save_uploaded_pdf(req: Request, filename: str, raw: bytes):
     if len(raw) > UPLOAD_LIMIT:
-        raise HTTPException(413,"PDF 文件超过 20 MB 限制")
+        raise HTTPException(413,f"PDF upload limit is {UPLOAD_LIMIT // (1024*1024)} MB")
     if not raw.startswith(b"%PDF"):
         raise HTTPException(400,"文件不是有效 PDF，请上传 .pdf 文件")
     if not raw:
